@@ -1,27 +1,46 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"os"
 	"strings"
+
+	"golang.org/x/sync/errgroup"
+
+	"github.com/fatih/color"
 
 	"github.com/shirerpeton/audioCondenser/internal/common"
 	"github.com/shirerpeton/audioCondenser/internal/condenser"
 	"github.com/shirerpeton/audioCondenser/internal/parser"
 )
 
-func printStats(files []common.CondenseFile) error {
+func printStats(files []*common.CondenseFile) error {
 	for _, file := range files {
 		percent := (float64(file.CondensedDuration) / float64(file.OriginalDuration)) * 100
-		fmt.Printf(
-			"input: %s | sub: %s | duration %v -> output: %s | condensed duration: %v (%.1f%%)\n",
-			file.Input,
-			file.Sub,
-			file.OriginalDuration,
-			file.Output,
-			file.CondensedDuration,
-			percent)
+		color.Set(color.FgYellow)
+		fmt.Print("input: ")
+		color.Set(color.FgGreen)
+		fmt.Printf("%s\n", file.Input)
+		color.Set(color.FgYellow)
+		fmt.Print("sub: ")
+		color.Set(color.FgGreen)
+		fmt.Printf("%s\n", file.Sub)
+		color.Set(color.FgYellow)
+		fmt.Print("duration: ")
+		color.Set(color.FgGreen)
+		fmt.Printf("%v\n", file.OriginalDuration)
+		color.Set(color.FgYellow)
+		fmt.Print("output: ")
+		color.Set(color.FgMagenta)
+		fmt.Printf("%s\n", file.Output)
+		color.Set(color.FgYellow)
+		fmt.Print("condensed duration: ")
+		color.Set(color.FgMagenta)
+		fmt.Printf("%v (%.1f%%)\n", file.CondensedDuration, percent)
+		color.Unset()
+		fmt.Println()
 	}
 	return nil
 }
@@ -36,12 +55,82 @@ func getOutputPath(input string) string {
 	return result
 }
 
+func getFiles(input string, sub string, output string, isDir bool) ([]*common.CondenseFile, error) {
+	files := make([]*common.CondenseFile, 0)
+
+	if !isDir {
+		file := &common.CondenseFile{
+			Input: input,
+			Sub: sub,
+		}
+		if output != "" {
+			file.Output = output
+		} else {
+			file.Output = getOutputPath(file.Input)
+		}
+		files = append(files, file)
+	} else {
+		outputFolder := output
+		if outputFolder == "" {
+			outputFolder = "./output/"
+		}
+		err := os.Mkdir(outputFolder, 0755)
+		if err != nil && !errors.Is(err, os.ErrExist) {
+			return nil, err
+		}
+		if !strings.HasSuffix(outputFolder, "/") {
+			outputFolder += "/"
+		}
+		var inputEntries []string
+		var subsEntries []string
+		var outputEntries []string
+		entries, err := os.ReadDir(input)
+		if err != nil {
+			return nil, err
+		}
+		for _, entr := range entries {
+			if entr.IsDir() {
+				continue
+			}
+			path := input + entr.Name()
+			inputEntries = append(inputEntries, path)
+			outputEntries = append(outputEntries, outputFolder + getOutputPath(entr.Name()))
+		}
+		entries, err = os.ReadDir(sub)
+		if err != nil {
+			return nil, err
+		}
+		for _, entr := range entries {
+			if entr.IsDir() {
+				continue
+			}
+			path := sub + entr.Name()
+			subsEntries = append(subsEntries, path)
+		}
+		if len(inputEntries) == 0 {
+			return nil, errors.New("No input files")
+		}
+		if len(subsEntries) == 0 {
+			return nil, errors.New("No input subtitles")
+		}
+		for i := 0; i < len(inputEntries) && i < len(subsEntries); i++ {
+			file := &common.CondenseFile{
+				Input: inputEntries[i],
+				Sub: subsEntries[i],
+				Output: outputEntries[i],
+			}
+			files = append(files, file)
+		}
+	}
+	return files, nil
+}
+
 func main() {
 	input := flag.String("input", "", "Path to input audio or video file")
 	sub := flag.String("sub", "", "Path to input .ass sub file")
 	maxGap := flag.Float64("gap", 1.0, "Maximum allowed gap in dialog (in seconds)")
 	output := flag.String("out", "", "Path to output mp3 file, defaults to input filename with _condensed suffix and mp3 extension")
-	check := flag.Bool("check", false, "Calculate and print how condensed audio will be with parameters provided, but do not process")
+	run := flag.Bool("run", false, "Supply to run ffmpeg commands to condense files, without it, command just calculates and prints stats")
 	flag.Parse()
 
 	if *input == "" || *sub == "" {
@@ -53,33 +142,69 @@ func main() {
 		fmt.Println("Max gap must be > 0")
 		os.Exit(1)
 	}
-	file := &common.CondenseFile{
-		Input: *input,
-		Sub: *sub,
+
+	inputStat, err := os.Stat(*input)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
 	}
-	if *output != "" {
-		file.Output = *output
-	} else {
-		file.Output = getOutputPath(file.Input)
+	subStat, err := os.Stat(*sub)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
 	}
-	file, err := parser.Parse(file, *maxGap);
+	if (inputStat.IsDir() && !subStat.IsDir()) || (!inputStat.IsDir() && subStat.IsDir()) {
+		fmt.Println("Either both input and sub parameters should be files or directories")
+		os.Exit(1)
+	}
+
+	files, err := getFiles(*input, *sub, *output, inputStat.IsDir())
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 
-	files := make([]common.CondenseFile, 1)
-	files[0] = *file
+	var g errgroup.Group
+
+	for _, file := range files {
+		g.Go(func() error {
+			err = parser.Parse(file, *maxGap)
+			if err != nil {
+				return err
+			}
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		fmt.Println("Error parsing files", err)
+		os.Exit(1)
+	}
 
 	printStats(files)
 
-	if *check {
+	if !*run {
 		return
 	}
 
-	err = condenser.ProcessFile(*file);
-	if err != nil {
-		fmt.Println(err)
+
+	for _, file := range files {
+		g.Go(func() error {
+			err = condenser.ProcessFile(*file)
+			if err != nil {
+				return err
+			}
+			fmt.Print("File ");
+			color.Set(color.FgMagenta)
+			fmt.Printf("%s", file.Output);
+			color.Unset()
+			fmt.Println(" - done");
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		fmt.Println("Error processing files", err)
 		os.Exit(1)
 	}
 }

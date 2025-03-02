@@ -164,27 +164,18 @@ func getCondensedDuration(condensedIntervals []*common.Interval) (time.Duration,
 	return condensedDuration, nil
 }
 
-func Parse(file *common.CondenseFile, maxGap float64) (*common.CondenseFile, error) {
-	_, err := os.Stat(file.Input)
-	if err != nil {
-		return nil, err
-	}
-	_, err = os.Stat(file.Sub)
-	if err != nil {
-		return nil, err
-	}
-
+func Parse(file *common.CondenseFile, maxGap float64) error {
 	dialogs, err := parseSub(file.Sub)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if len(dialogs) == 0 {
-		return nil, errors.New("No dialogs found in sub file");
+		return errors.New("No dialogs found in sub file");
 	}
 
 	originalDuration, err := getOriginalDuration(file.Input)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	file.OriginalDuration = originalDuration
 
@@ -193,15 +184,15 @@ func Parse(file *common.CondenseFile, maxGap float64) (*common.CondenseFile, err
 		time.Duration(maxGap*float64(time.Second)),
 		originalDuration)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	file.CondenseIntervals = condenseIntervals
 
 	condensedDuration, err := getCondensedDuration(file.CondenseIntervals)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	file.CondensedDuration = condensedDuration
 
-	return file, nil
+	return nil
 }
