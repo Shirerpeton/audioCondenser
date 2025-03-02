@@ -108,10 +108,10 @@ func getFiles(input string, sub string, output string, isDir bool) ([]*common.Co
 			subsEntries = append(subsEntries, path)
 		}
 		if len(inputEntries) == 0 {
-			return nil, errors.New("No input files")
+			return nil, errors.New("no input files")
 		}
 		if len(subsEntries) == 0 {
-			return nil, errors.New("No input subtitles")
+			return nil, errors.New("no input subtitles")
 		}
 		for i := 0; i < len(inputEntries) && i < len(subsEntries); i++ {
 			file := &common.CondenseFile{

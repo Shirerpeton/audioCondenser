@@ -17,12 +17,12 @@ func getDurationFromTimestamp(timestamp string) (time.Duration, error) {
 	parts := strings.Split(timestamp, ":")
 	hours, err := strconv.Atoi(parts[0])
 	if err != nil {
-		err = fmt.Errorf("Can't convert timestamp to duration, error in hours %v:", err)
+		err = fmt.Errorf("can't convert timestamp to duration, error in hours: %v", err)
 		return 0, err
 	}
 	minutes, err := strconv.Atoi(parts[1])
 	if err != nil {
-		err = fmt.Errorf("Can't convert timestamp to duration, error in minutes %v:", err)
+		err = fmt.Errorf("can't convert timestamp to duration, error in minutes: %v", err)
 		return 0, err
 	}
 	var sep string
@@ -34,7 +34,7 @@ func getDurationFromTimestamp(timestamp string) (time.Duration, error) {
 	parts = strings.Split(parts[2], sep)
 	seconds, err := strconv.Atoi(parts[0])
 	if err != nil {
-		err = fmt.Errorf("Can't convert timestamp to duration, error in seconds %v:", err)
+		err = fmt.Errorf("can't convert timestamp to duration, error in seconds: %v", err)
 		return 0, err
 	}
 	if len(parts[1]) == 2 {
@@ -42,7 +42,7 @@ func getDurationFromTimestamp(timestamp string) (time.Duration, error) {
 	}
 	miliseconds, err := strconv.Atoi(parts[1])
 	if err != nil {
-		err = fmt.Errorf("Can't convert timestamp to duration, error in miliseconds%v:", err)
+		err = fmt.Errorf("can't convert timestamp to duration, error in miliseconds: %v", err)
 		return 0, err
 	}
 	duration := hours*int(time.Hour) + minutes*int(time.Minute) + seconds*int(time.Second) + miliseconds*int(time.Millisecond);
@@ -90,7 +90,7 @@ func parseAssSub(content string) ([]common.Interval, error) {
 		}
 		parts := strings.Split(line, ",")
 		if len(parts) < 10 {
-			return nil, errors.New("Malformed subtitle file")
+			return nil, errors.New("malformed subtitle file")
 		}
 		start, err := getDurationFromTimestamp(parts[1])
 		if err != nil {
@@ -157,7 +157,7 @@ func getCondensedDuration(condensedIntervals []*common.Interval) (time.Duration,
 	var condensedDuration time.Duration
 	for _, intrv := range condensedIntervals {
 		if intrv.Start >= intrv.End {
-			return 0, errors.New("Malformed dialog timings (end > start)")
+			return 0, errors.New("malformed dialog timings (end > start)")
 		}
 		condensedDuration += intrv.End - intrv.Start
 	}
@@ -170,7 +170,7 @@ func Parse(file *common.CondenseFile, maxGap float64) error {
 		return err
 	}
 	if len(dialogs) == 0 {
-		return errors.New("No dialogs found in sub file");
+		return errors.New("no dialogs found in sub file");
 	}
 
 	originalDuration, err := getOriginalDuration(file.Input)
