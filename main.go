@@ -126,11 +126,11 @@ func getFiles(input string, sub string, output string, isDir bool) ([]*common.Co
 }
 
 func main() {
-	input := flag.String("input", "", "Path to input audio or video file")
-	sub := flag.String("sub", "", "Path to input .ass sub file")
-	maxGap := flag.Float64("gap", 1.0, "Maximum allowed gap in dialog (in seconds)")
-	output := flag.String("out", "", "Path to output mp3 file, defaults to input filename with _condensed suffix and mp3 extension")
-	run := flag.Bool("run", false, "Supply to run ffmpeg commands to condense files, without it, command just calculates and prints stats")
+	input := flag.String("input", "", "Path to input audio/video file or directory containing them")
+	sub := flag.String("sub", "", "Path to input subtitle file or directory containing them")
+	maxGap := flag.Float64("gap", 1.0, "Maximum allowed gap in dialog (in seconds, decimal)")
+	output := flag.String("out", "", "Path to output mp3 file, defaults to input filename with _condensed suffix and mp3 extension, for diretory processing must be a directory name as well")
+	run := flag.Bool("run", false, "Supply to run ffmpeg commands to condense files, in absense of this flag, command will just calculate and print stats")
 	flag.Parse()
 
 	if *input == "" || *sub == "" {
