@@ -134,12 +134,12 @@ func main() {
 	flag.Parse()
 
 	if *input == "" || *sub == "" {
-		fmt.Println("Provide input audio or video and subtitle file paths")
+		fmt.Println("provide input audio or video and subtitle file paths")
 		os.Exit(1)
 	}
 
 	if *maxGap < 0 {
-		fmt.Println("Max gap must be > 0")
+		fmt.Println("max gap must be > 0")
 		os.Exit(1)
 	}
 
@@ -154,7 +154,7 @@ func main() {
 		os.Exit(1)
 	}
 	if (inputStat.IsDir() && !subStat.IsDir()) || (!inputStat.IsDir() && subStat.IsDir()) {
-		fmt.Println("Either both input and sub parameters should be files or directories")
+		fmt.Println("either both input and sub parameters should be files or directories")
 		os.Exit(1)
 	}
 
@@ -177,7 +177,7 @@ func main() {
 	}
 
 	if err := g.Wait(); err != nil {
-		fmt.Println("Error parsing files", err)
+		fmt.Println("error parsing files: ", err)
 		os.Exit(1)
 	}
 
@@ -204,7 +204,7 @@ func main() {
 	}
 
 	if err := g.Wait(); err != nil {
-		fmt.Println("Error processing files", err)
+		fmt.Println("error processing files: ", err)
 		os.Exit(1)
 	}
 }
