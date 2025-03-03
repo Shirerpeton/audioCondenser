@@ -10,19 +10,22 @@ import (
 	"github.com/shirerpeton/audioCondenser/internal/common"
 )
 
-func ProcessFile(file common.CondenseFile) error {
+func ProcessFile(file common.CondenseFile, track int) error {
 	var filterParts []string
+	inputStream := fmt.Sprintf("[0:a:%d]", track)
 	if len(file.CondenseIntervals) == 1 {
 		filterParts = append(
 			filterParts,
 			fmt.Sprintf(
-				"[0:a]atrim=start=%.3f:end=%.3f,asetpts=PTS-STARTPTS[out]",
+				"%satrim=start=%.3f:end=%.3f,asetpts=PTS-STARTPTS[out]",
+				inputStream,
 				file.CondenseIntervals[0].Start.Seconds(),
 				file.CondenseIntervals[0].End.Seconds()))
 	} else {
 		for idx, trim := range file.CondenseIntervals {
 			part := fmt.Sprintf(
-				"[0:a]atrim=start=%.3f:end=%.3f,asetpts=PTS-STARTPTS[s%d]",
+				"%satrim=start=%.3f:end=%.3f,asetpts=PTS-STARTPTS[s%d]",
+				inputStream,
 				trim.Start.Seconds(),
 				trim.End.Seconds(),
 				idx)

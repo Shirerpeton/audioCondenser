@@ -130,6 +130,7 @@ func main() {
 	sub := flag.String("sub", "", "Path to input subtitle file or directory containing them")
 	maxGap := flag.Float64("gap", 1.0, "Maximum allowed gap in dialog (in seconds, decimal)")
 	output := flag.String("out", "", "Path to output mp3 file, defaults to input filename with _condensed suffix and mp3 extension, for diretory processing must be a directory name as well")
+	track := flag.Int("track", 0, "Which track from file to use, 0 by default")
 	run := flag.Bool("run", false, "Supply to run ffmpeg commands to condense files, in absense of this flag, command will just calculate and print stats")
 	flag.Parse()
 
@@ -190,7 +191,7 @@ func main() {
 
 	for _, file := range files {
 		g.Go(func() error {
-			err = condenser.ProcessFile(*file)
+			err = condenser.ProcessFile(*file, *track)
 			if err != nil {
 				return err
 			}
