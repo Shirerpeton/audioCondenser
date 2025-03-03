@@ -28,6 +28,10 @@ func printStats(files []*common.CondenseFile) error {
 		color.Set(color.FgGreen)
 		fmt.Printf("%s\n", file.Sub)
 		color.Set(color.FgYellow)
+		fmt.Print("track: ")
+		color.Set(color.FgGreen)
+		fmt.Printf("%s\n", file.TrackDescription)
+		color.Set(color.FgYellow)
 		fmt.Print("duration: ")
 		color.Set(color.FgGreen)
 		fmt.Printf("%v\n", file.OriginalDuration)
@@ -169,7 +173,7 @@ func main() {
 
 	for _, file := range files {
 		g.Go(func() error {
-			err = parser.Parse(file, *maxGap)
+			err = parser.Parse(file, *maxGap, *track)
 			if err != nil {
 				return err
 			}

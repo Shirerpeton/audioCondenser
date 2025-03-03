@@ -134,6 +134,23 @@ func getCondenseIntervals(dialogs []common.Interval, maxGap time.Duration, total
 	return intervals, nil
 }
 
+func getTrackDescription(path string, track int) (string, error) {
+	cmd := exec.Command("ffprobe",
+		"-v", "error",
+		"-select_streams", fmt.Sprintf("a:%d", track),
+		"-show_entries", "stream=codec_name",
+		"-show_entries", "stream_tags=language",
+		"-of", "csv=p=0",
+		path)
+
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", err
+	}
+	outputStr := strings.TrimSpace(string(output))
+	return outputStr, nil
+}
+
 func getOriginalDuration(path string) (time.Duration, error) {
 	cmd := exec.Command("ffprobe",
 		"-v", "error",
@@ -164,7 +181,7 @@ func getCondensedDuration(condensedIntervals []*common.Interval) (time.Duration,
 	return condensedDuration, nil
 }
 
-func Parse(file *common.CondenseFile, maxGap float64) error {
+func Parse(file *common.CondenseFile, maxGap float64, track int) error {
 	dialogs, err := parseSub(file.Sub)
 	if err != nil {
 		return err
@@ -193,6 +210,12 @@ func Parse(file *common.CondenseFile, maxGap float64) error {
 		return err
 	}
 	file.CondensedDuration = condensedDuration
+
+	trackDesc, err := getTrackDescription(file.Input, track)
+	if err != nil {
+		return err
+	}
+	file.TrackDescription = trackDesc
 
 	return nil
 }

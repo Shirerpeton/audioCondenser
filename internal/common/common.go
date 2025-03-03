@@ -11,6 +11,7 @@ type CondenseFile struct {
 	Input string
 	Output string
 	Sub string
+	TrackDescription string
 	CondenseIntervals []*Interval
 	OriginalDuration time.Duration
 	CondensedDuration time.Duration
